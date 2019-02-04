@@ -5,4 +5,18 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Crawler\" />
+    <Folder Include="Crawler\Entities\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DotnetSpider.Extension" Version="3.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="2.2.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Context\QuoteEntity.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="failing-20190204.log" />
+  </ItemGroup>
 </Project>
