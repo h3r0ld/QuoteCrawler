@@ -20,36 +20,40 @@ namespace QuoteCrawler.Firebase
             _firebaseClient = new FirebaseClient(baseUrl);
         }
 
-        public async Task ReUpload(List<FirebaseQuote> quotes)
+        public async Task ReUpload(List<FirebaseQuote> quotes, int batchSize)
         {
             await Clear();
-            await Upload(quotes);
+            await Upload(quotes, batchSize);
         }
 
-        public async Task Upload(List<FirebaseQuote> quotes)
+        public async Task Upload(List<FirebaseQuote> quotes, int batchSize)
         {
-            var partials = quotes.Split(10);
+            // Split the quotes to batches, 
+            // so we can post them on multiple threads simultaneously
+            var batches = quotes.Split(batchSize);
 
-            for (var i = 0; i < partials.Count(); i++)
-            {
-                Task.Run(async () => await Upload($"Uploading batch: {i}!", partials.ElementAt(i)));
-            }
-        }
+            var tasks = new List<Task>();
 
-        private async Task Upload(string message, IEnumerable<FirebaseQuote> quotes)
-        {
-            Console.WriteLine("Uploading quotes to firebase...");
-            var cnt = 0;
-            foreach(var quote in quotes)
+            for (var i = 0; i < batches.Count(); i++)
             {
-                Console.WriteLine($"{message} Author: {quote.Author}, {++cnt} of {quotes.Count()}");
-                await _firebaseClient.Child(QUOTES_NODE).PostAsync(quote);
+                tasks.Add(Upload(batches.ElementAt(i)));
             }
+
+            await Task.WhenAll(tasks);
         }
 
         public async Task Clear()
         {
             await _firebaseClient.Child(QUOTES_NODE).DeleteAsync();
+        }
+
+        private async Task Upload(IEnumerable<FirebaseQuote> quotes)
+        {
+            Console.WriteLine("Uploading quotes to firebase...");
+            foreach (var quote in quotes)
+            {
+                await _firebaseClient.Child(QUOTES_NODE).PostAsync(quote);
+            }
         }
     }
 }

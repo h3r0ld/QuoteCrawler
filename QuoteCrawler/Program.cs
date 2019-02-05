@@ -1,21 +1,17 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using DotnetSpider.Extraction.Model;
 using QuoteCrawler.Crawler;
 using QuoteCrawler.Crawler.Entities;
+using QuoteCrawler.Extension;
 using QuoteCrawler.Firebase;
-using QuoteCrawler.Firebase.Entities;
 
 namespace QuoteCrawler
 {
     class Program
     {
-        private static FirebaseService _firebaseService;
-
         public static void Main(string[] args)
         {
             MainAsync(args).GetAwaiter().GetResult();
@@ -27,11 +23,10 @@ namespace QuoteCrawler
             {
                 throw new ArgumentException("Required arguments are missing: [First Argument: firebase host url] [Second Argument: Maximum quote length ] [Third Argument -> Author names separated with commas");
             }
+            var stopWatch = Stopwatch.StartNew();
 
             var firebaseHost = args[0];
             Console.WriteLine($"Using firebase host: {firebaseHost}");
-
-            _firebaseService = new FirebaseService(firebaseHost);
 
             int.TryParse(args[1], out int maxQuoteLength);
 
@@ -41,59 +36,34 @@ namespace QuoteCrawler
 
             Console.WriteLine($"Processing authors: {string.Join(',', authors)}");
 
-            var stopWatch = Stopwatch.StartNew();
-
-            await _firebaseService.Clear();
-
-            foreach(var author in authors)
-            {
-                await ProcessQuotes(author, maxQuoteLength);
-            }
+            await ProcessQuotes(authors.ToList(), maxQuoteLength, firebaseHost);
 
             stopWatch.Stop();
             Console.WriteLine($"Finished in {stopWatch.ElapsedMilliseconds} ms");
         }
 
-        public static async Task ProcessQuotes(string author, int maxQuoteLength)
+        public static async Task ProcessQuotes(List<string> authors, int maxQuoteLength, string firebaseHost)
         {
-            var baseUrl = $"https://citatum.hu/szerzo/{author.Replace(' ', '_')}";
-
-            PagingSpider pagingSpider = new PagingSpider(author, baseUrl)
-            {
-            };
+            // Get max page numbers for every author
+            PagingSpider pagingSpider = new PagingSpider(authors);
             pagingSpider.Run();
 
-            var pagingEntities = pagingSpider.CollectionEntityPipeline.GetCollection(typeof(PagingEntity).FullName);
+            // Convert the result to PagingEntity objects
+            var pagingEntities = pagingSpider.CollectionEntityPipeline.ToEntityList<PagingEntity>();
 
-            var paging = pagingEntities.First() as PagingEntity;
-            Console.WriteLine($"Author: {paging.Author} Max pages: {paging.MaxPages}");
-
-            QuoteSpider quoteSpider = new QuoteSpider(author, baseUrl, paging.MaxPages)
+            // Get all quotes from all pages for the author
+            QuoteSpider quoteSpider = new QuoteSpider(pagingEntities.ToList())
             {
-                
-                ThreadNum = 2
+                ThreadNum = 4
             };
             quoteSpider.Run();
 
-            var quoteEntities = quoteSpider.CollectionEntityPipeline.GetCollection(typeof(QuoteEntity).FullName);;
+            // Convert the result to FirebaseQuote objects
+            var firebaseQuotes = quoteSpider.CollectionEntityPipeline.ToFirebaseQuotes(maxQuoteLength);
 
-            var firebaseQuotes = new List<FirebaseQuote>();
-
-            foreach (IBaseEntity item in quoteEntities)
-            {
-                var quoteEntity = item as QuoteEntity;
-
-                if (quoteEntity.Quote.Length < maxQuoteLength)
-                {
-                    firebaseQuotes.Add(new FirebaseQuote
-                    {
-                        Author = quoteEntity.Author,
-                        Quote = quoteEntity.Quote
-                    });
-                }
-            }
-
-            await _firebaseService.Upload(firebaseQuotes);
+            // Delete all existing quotes from firebase, then upload all quotes
+            var firebaseService = new FirebaseService(firebaseHost);
+            await firebaseService.ReUpload(firebaseQuotes, batchSize: 50);
         }
     }
 }

@@ -6,7 +6,6 @@ using DotnetSpider.Extraction.Model.Attribute;
 
 namespace QuoteCrawler.Crawler.Entities
 {
-    [Schema("quotecrawler", "paging")]
     [Entity(Expression = "(.//div[@class='lapoz']//div[@class='lapc']//a)[last()]", Type = SelectorType.XPath)]
     public class PagingEntity : AuthorEntity
     {

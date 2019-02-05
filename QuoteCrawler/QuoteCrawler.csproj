@@ -22,5 +22,6 @@
   <ItemGroup>
     <None Remove="failing-20190204.log" />
     <None Remove="dotnetspider-20190204.log" />
+    <None Remove="dotnetspider-20190205.log" />
   </ItemGroup>
 </Project>

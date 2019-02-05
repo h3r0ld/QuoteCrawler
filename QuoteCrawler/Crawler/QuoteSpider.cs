@@ -1,29 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using DotnetSpider.Core.Pipeline;
-using DotnetSpider.Extension;
+﻿using System.Collections.Generic;
 using QuoteCrawler.Crawler.Entities;
 
 namespace QuoteCrawler.Crawler
 {
-    public class QuoteSpider : AuthorSpider
+    public class QuoteSpider : CitatumSpider
     {
-        public int MaxPages { get; }
+        public List<PagingEntity> AuthorsWithMaxPages { get; }
 
-        public QuoteSpider(string author, string baseUrl, int maxPages) : base(author, baseUrl) 
+        public QuoteSpider(List<PagingEntity> pagingEntities)
         {
-            MaxPages = maxPages;
+            AuthorsWithMaxPages = pagingEntities;
         }
 
         protected override void OnInit(params string[] arguments)
         {
             base.OnInit(arguments);
 
-            for(int i = 1; i <= MaxPages; i++)
+            AuthorsWithMaxPages.ForEach(authorWithMaxPage =>
             {
-                AddRequest($"{BaseUrl}/{i}", new Dictionary<string, dynamic> { { AUTHOR_KEY, Author } });
-            }
+                for (int i = 1; i <= authorWithMaxPage.MaxPages; i++)
+                {
+                    var authorWithUnderscore = authorWithMaxPage.Author.Replace(' ', '_');
+                    AddRequest($"{BaseUrl}{authorWithUnderscore}/{i}", 
+                        new Dictionary<string, dynamic> { { AUTHOR_KEY, authorWithMaxPage.Author } });
+                }
+            });
 
             AddEntityType<QuoteEntity>();
         }

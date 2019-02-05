@@ -1,22 +1,18 @@
-﻿using System;
-using DotnetSpider.Extension;
+﻿using DotnetSpider.Extension;
 using DotnetSpider.Extension.Pipeline;
 
 namespace QuoteCrawler.Crawler
 {
-    public abstract class AuthorSpider: EntitySpider
+    public abstract class CitatumSpider: EntitySpider
     {
         protected static readonly string AUTHOR_KEY = "AUTHOR";
 
-        public string Author { get; }
-        public string BaseUrl { get; }
+        public string BaseUrl { get => "https://citatum.hu/szerzo/"; }
 
         public CollectionEntityPipeline CollectionEntityPipeline { get; }
 
-        protected AuthorSpider(string author, string baseUrl)
+        protected CitatumSpider()
         {
-            Author = author;
-            BaseUrl = baseUrl;
             CollectionEntityPipeline = new CollectionEntityPipeline();
         }
 

@@ -1,19 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using DotnetSpider.Extension;
-using DotnetSpider.Extension.Pipeline;
+﻿using System.Collections.Generic;
 using QuoteCrawler.Crawler.Entities;
 
 namespace QuoteCrawler.Crawler
 {
-    public class PagingSpider : AuthorSpider
+    public class PagingSpider : CitatumSpider
     {
-        public PagingSpider(string author, string baseUrl) : base(author, baseUrl) {}
+        public List<string> Authors { get; }
+
+        public PagingSpider(List<string> authors) { 
+            Authors = authors;
+        }
 
         protected override void OnInit(params string[] arguments)
         {
             base.OnInit(arguments);
-            AddRequest(BaseUrl, new Dictionary<string, dynamic> { { AUTHOR_KEY, Author } });
+            Authors.ForEach(author =>
+            {
+                var authorWithUnderscore = author.Replace(' ', '_');
+                AddRequest($"{BaseUrl}{authorWithUnderscore}", new Dictionary<string, dynamic> { { AUTHOR_KEY, author } });
+            });
+
             AddEntityType<PagingEntity>();
         }
     }
