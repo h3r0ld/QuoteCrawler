@@ -4,6 +4,10 @@ Crawler for obtaining quotes from the following site: https://citatum.hu/
 Have you ever needed hungarian Paulo Coelho or Nora Oravecz quotes for an urgent matter?
 Well, I have, so I made this little tool for myself which crawls quotes from the aforementioned site, and pushes them to a [Firebase database](https://firebase.google.com/docs/database/).
 
+Used packages:
+- Crawling: [DotnetSpider](https://github.com/dotnetcore/DotnetSpider)
+- Firebase Client: [firebase-database-dotnet](https://github.com/step-up-labs/firebase-database-dotnet)
+
 Arguments:
 - First: Firebase Database URL
 - Second: Maximum Quote Length
